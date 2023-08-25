@@ -1,0 +1,199 @@
+---
+title: "Task1_Genomic_Regions"
+author: "Tram Nguyen"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Task1_Genomic_Regions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Analysis of genomic regions using the R package GenomicRanges
+
+This vignette includes the code for the first task.
+
+First, we will load all required packages and datasets.
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  tidy.opts = list(width.cutoff = 100), tidy = TRUE
+)
+```
+
+```{r setup}
+# library(CCBcoding)
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Load packages
+#BiocManager::install("GenomicRanges")
+library(GenomicRanges)
+library(plyranges)
+
+# BiocManager::install("BSgenome.Mmusculus.UCSC.mm9") Includes full genome sequences for Mus musculus (Mouse) as provided by UCSC (mm9, Jul. 2007) and stored in Biostrings objects.
+# BiocManager::install("BSgenome")
+
+library(BSgenome.Mmusculus.UCSC.mm9)
+library(BSgenome)
+
+# Load in packages for the human genome
+# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
+# BiocManager::install("GenomicFeatures")
+
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(GenomicFeatures)
+
+```
+
+<br>
+
+### 1. Find the chromosome lengths for Mmusculus mm9 genome.
+
+```{r}
+# Load the Mmusculus mm9 genome
+mm9_genome <- BSgenome.Mmusculus.UCSC.mm9
+
+# Calculate chromosome lengths using GenomicRanges
+chrom_lengths <- seqlengths(mm9_genome)
+
+# Print the chromosome lengths
+chrom_lengths
+
+```
+
+<br>
+
+### 2. Find the maximum number of exons per transcript on chromosome 1 of the hg38 genome assembly.
+
+For each gene, there will be many isoforms (multiple transcripts), so we want to first determine how many transcripts belong to each gene. Then, for each transcript, we want to count the number of exons per transcript. Finally, we can output the isoform/transcript that had the highest number of exons within each gene.
+
+
+```{r subset Chr1}
+
+# Load the TxDb object for hg38 human genome annotation
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+# View the object to ensure we loaded it correctly
+txdb
+
+# To check which chromosomes are active
+head(seqlevels(txdb))
+
+# Grab just Chromosome 1
+seqlevels(txdb) <- "chr1"
+
+# Extract transcript isoforms for each gene on Chr1
+txn_by_genes <- transcriptsBy(txdb, "gene")
+txn_by_genes[[1]] # View the isoforms for the first gene in the object. 
+
+```
+
+```{r maxExon}
+# We also want to grab the corresponding exons for all transcripts
+ex_by_tx <- exonsBy(txdb, by="tx", use.names=TRUE)
+
+# Make an empty data frame with GeneID and the maximum Exon count for that gene per transcript.
+MaxExon.df <- data.frame(GeneID = names(txn_by_genes), MaxExonCountPerTxn = NA)
+
+# For loop to extract the maximum number of exons per transcript for each gene on Chr1.
+for (gene in 1:length(txn_by_genes)){
+  
+    # Extract unique transcript names for each gene at a time
+    txNames <- txn_by_genes[[gene]]$tx_name
+    
+    # Extract exons for just that gene
+    c.df <- ex_by_tx[names(ex_by_tx) %in% txNames] # This show exons as separate GRanges objects for each transcript in a GRangesList.
+    
+    # Get the maximum exon count for transcripts 
+    maxCount <- max(elementNROWS(c.df))
+    
+    # Populate your dataframe
+    MaxExon.df[gene, 2] <- maxCount
+}
+
+head(MaxExon.df)
+```
+
+<br>
+
+### 3. We want to explore the overlap of promoters and CpG islands using Chr 21. Specifically, what percentage of promoters on chromosome 21 overlap with at least one CpG island?
+
+Read in the BED files provided.
+
+```{r}
+prom <- read.table("./hg19proms.bed", header = FALSE, sep = "\t", colClasses = c("character", "integer", "integer", "character","character","character")) # Promoters
+
+CpG <- read.table("./haowulab.org_software_makeCGI_model-based-cpg-islands-hg19.txt", header = TRUE, sep = "\t", colClasses = c("character", "integer", "integer", "integer","integer","integer", "numeric", "numeric")) # CpG
+```
+
+Create GRanges objects for each file to make it easier to work with.
+
+```{r}
+# Create GRanges objects
+promGRanges <- GRanges(seqnames = prom$V1, ranges = IRanges(start = prom$V2, end = prom$V3), names = paste0("Prom", 1:nrow(prom)))
+
+CpGRanges <- GRanges(seqnames = CpG$chr, ranges = IRanges(start = CpG$start, end = CpG$end), names = paste0("CpG", 1:nrow(CpG)))
+```
+
+Subset just chromosome 21.
+
+```{r}
+Ch21.prom <- promGRanges %>% 
+  filter(seqnames == 'chr21')
+
+Ch21.CpG <- CpGRanges %>% 
+  filter(seqnames == 'chr21')
+```
+
+Find overlapping regions where a promoter overlaps at least once with a CpG region.
+
+findOverlaps will return an index in each sample for every overlap. For the case where there are multiple overlaps for a range, there is an index created for each overlap. This is why changing the order of the subject and query doesn't change the number of rows.
+
+
+
+```{r}
+
+overlaps <- findOverlaps(Ch21.prom, Ch21.CpG)
+
+# Some promoters will overlap with CpG islands more than once. We want to just count these once.
+length(unique(queryHits(overlaps)))
+
+```
+
+Alternative, we can do subsetByOverlap. This returns only the ranges in the first object that have overlaps with any ranges in the second object. The order of the subject and query matters in the number of rows returned. For example, when one query range overlaps two subject ranges, only one row is returned. However, if you flip the subject and query ranges, for that particular overlap two rows would then be returned.
+
+```{r}
+# Alternative, we can do:
+num_overlapping_regions <- subsetByOverlaps(Ch21.prom, Ch21.CpG) 
+length(num_overlapping_regions)
+
+# Calculate percentage
+# Get the total number of promoters on Chr21
+tot <- length(Ch21.prom)
+percentProm <- (length(num_overlapping_regions) / tot)*100
+print(percentProm)
+```
+
+***Out of all promoters on Chr21 (n=586), 46.07509% (n=270) overlap with least one CpG island. ***
+
+<br>
+
+### 4. For those promoters that overlap with CpG islands on chromosome 21: what is the maximum number of overlapping CpG islands for one promoter at a time?
+
+```{r}
+# For all promoters that overlap at least once, count how many times it overlaps with CpG island.
+overlap_counts <- countOverlaps(Ch21.prom, Ch21.CpG) 
+print(max(overlap_counts))
+```
+
+***The maximum number of CpG islands that one promoter can overlap at a time = 3. ***
+
+```{r}
+sessionInfo()
+```
+

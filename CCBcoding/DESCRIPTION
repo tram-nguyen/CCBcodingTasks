@@ -1,0 +1,76 @@
+Package: CCBcoding
+Type: Package
+Title: Three Coding Tasks for CCB
+Version: 0.1.0
+Author: Tram N. Nguyen
+Maintainer: The package maintainer <tn337@cornell.edu>
+Description: This package includes coding tasks for 
+    1. investigation genomic features, 
+    2. analyzing bulk RNAseq data, and 
+    3. performing a scRNAseq analysis following the quick start workflow 
+    from the OSCA workflow.
+License: None
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    stats4,
+    parallel,
+    stats,
+    graphics,
+    grDevices,
+    Utils,
+    methods,
+    base,
+    TxDb.Hsapiens.UCSC.hg38.knownGene (3.10.0),
+    AnnotationDbi (1.52.0),
+    BSgenome (1.58.0),
+    Biostrings (2.58.0),
+    plyranges (1.10.0),
+    SummarizedExperiment (1.20.0),
+    GenomicRanges (1.42.0),
+    IRanges (2.24.1),
+    matrixStats (0.61.0),
+    BiocGenerics (0.36.1),
+    GenomicFeatures (1.42.3),
+    BSgenome.Mmusculus.UCSC.mm9 (1.4.0),
+    rtracklayer (1.50.0),
+    XVector (0.30.0),
+    SingleCellExperiment (1.12.0),
+    Biobase (2.50.0),
+    GenomeInfoDb (1.26.7),
+    MatrixGenerics (1.2.1),
+    S4Vectors (0.28.1),
+    gplot2 (3.4.3),
+    dplyr (1.1.2),
+    Biobase (2.50.0),
+    BSgenome (1.58.0),
+    XVector (0.30.0),
+    IRanges (2.34.1),
+    tibble (3.2.10),
+    airway (1.10.0)
+    MatrixGenerics (1.2.1),
+    rtracklayer (1.50.0),
+    GenomicRanges (1.42.0),
+    S4Vectors (0.28.1),
+    reshape2 (1.4.4),
+    Biostrings (2.58.0),
+    bluster (1.10.0),
+    scater (1.28.0),
+    scRNAseq (2.14.0),
+    Biobase (2.60.0),
+    MatrixGenerics (1.12.3),
+    S4Vectors (0.38.1),
+    matrixStats (1.0.0),
+    scran (1.28.2),
+    scuttle (1.10.2),
+    SummarizedExperiment (1.30.2),
+    GenomeInfoDb (1.36.1),
+    BiocGenerics (0.46.0)
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+biocViews: SingleCell, RNAseq
+RoxygenNote: 7.1.2
