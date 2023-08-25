@@ -12,7 +12,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  tidy.opts = list(width.cutoff = 100), tidy = TRUE
 )
 ```
 
@@ -27,26 +28,27 @@ This vignette includes the code for the first task.
 
 First, we will load all required packages and datasets.
 
+```{r install, include=F}
+#BiocManager::install("GenomicRanges")
+# BiocManager::install("BSgenome.Mmusculus.UCSC.mm9") Includes full genome sequences for Mus musculus (Mouse) as provided by UCSC (mm9, Jul. 2007) and stored in Biostrings objects.
+# BiocManager::install("BSgenome")
+# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
+# BiocManager::install("GenomicFeatures")
+```
+
 ```{r, message=FALSE, warning=FALSE}
 # Load packages
-#BiocManager::install("GenomicRanges")
 library(GenomicRanges)
 library(plyranges)
 
-# BiocManager::install("BSgenome.Mmusculus.UCSC.mm9") Includes full genome sequences for Mus musculus (Mouse) as provided by UCSC (mm9, Jul. 2007) and stored in Biostrings objects.
-# BiocManager::install("BSgenome")
-
+# Load mouse
 library(BSgenome.Mmusculus.UCSC.mm9)
 library(BSgenome)
 
 # Load in packages for the human genome
-# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
-# BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
-# BiocManager::install("GenomicFeatures")
-
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(GenomicFeatures)
-
 ```
 <br>
 
@@ -72,7 +74,6 @@ For each gene, there will be many isoforms (multiple transcripts), so we want to
 
 
 ```{r subset Chr1}
-
 # Load the TxDb object for hg38 human genome annotation
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
@@ -87,8 +88,9 @@ seqlevels(txdb) <- "chr1"
 
 # Extract transcript isoforms for each gene on Chr1
 txn_by_genes <- transcriptsBy(txdb, "gene")
-txn_by_genes[[1]] # View the isoforms for the first gene in the object. 
 
+# View the isoforms for the first gene in the object. 
+print(txn_by_genes[[1]]) 
 ```
 
 ```{r maxExon}
@@ -123,10 +125,21 @@ head(MaxExon.df)
 
 Read in the BED files provided.
 
-```{r}
-prom <- read.table("./hg19proms.bed", header = FALSE, sep = "\t", colClasses = c("character", "integer", "integer", "character","character","character")) # Promoters
+```{r old load, include=F}
+#prom <- read.table("./data/hg19proms.bed", header = FALSE, sep = "\t", colClasses = c("character", "integer", "integer", "character","character","character")) # Promoters
 
-CpG <- read.table("./haowulab.org_software_makeCGI_model-based-cpg-islands-hg19.txt", header = TRUE, sep = "\t", colClasses = c("character", "integer", "integer", "integer","integer","integer", "numeric", "numeric")) # CpG
+#CpG <- read.table("./data/haowulab.org_software_makeCGI_model-based-cpg-islands-hg19.txt", header = TRUE, sep = "\t", colClasses = c("character", "integer", "integer", "integer","integer","integer", "numeric", "numeric")) # CpG
+```
+
+```{r, warning=F}
+library(readr)
+data(haowulabCpG, package = "CCBcodingTasks")
+CpG <- as.data.frame(haowulabCpG)
+head(CpG)
+
+data(hg19proms.bed, package = "CCBcodingTasks")
+prom <- as.data.frame(hg19proms.bed)
+head(prom)
 ```
 
 Create GRanges objects for each file to make it easier to work with.
@@ -155,12 +168,10 @@ findOverlaps will return an index in each sample for every overlap. For the case
 
 
 ```{r}
-
 overlaps <- findOverlaps(Ch21.prom, Ch21.CpG)
 
 # Some promoters will overlap with CpG islands more than once. We want to just count these once.
 length(unique(queryHits(overlaps)))
-
 ```
 
 Alternative, we can do subsetByOverlap. This returns only the ranges in the first object that have overlaps with any ranges in the second object. The order of the subject and query matters in the number of rows returned. For example, when one query range overlaps two subject ranges, only one row is returned. However, if you flip the subject and query ranges, for that particular overlap two rows would then be returned.

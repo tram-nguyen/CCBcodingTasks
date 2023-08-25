@@ -10,7 +10,7 @@
 #'
 edit_df <- function(df) {
 
-  library(dplyr)
+  package.name::function.name(dplyr)
   df %>%
     rownames_to_column(var = "GeneID") %>%
     melt(id.vars = c("Condition", "GeneID"), variable.name = "Sample", value.name = "ReadCount")
