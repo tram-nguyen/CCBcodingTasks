@@ -1,0 +1,24 @@
+Package: CCBcodingTasks
+Type: Package
+Title: Three Coding Tasks for CCB
+Version: 0.1.0
+Author: Tram N. Nguyen
+Maintainer: Tram N. Nguyen <tn337@cornell.edu>
+Description: This package includes coding tasks for 
+    1. investigation genomic features, 
+    2. analyzing bulk RNAseq data, and 
+    3. performing a scRNAseq analysis following the quick start workflow 
+    from the OSCA workflow.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    ggplot2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+biocViews: SingleCell, RNAseq
+RoxygenNote: 7.2.3
